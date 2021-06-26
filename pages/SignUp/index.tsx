@@ -1,7 +1,9 @@
 import React, { useCallback, useState } from "react";
-import { Button, Error, Form, Header, Input, Label, LinkContainer } from "./styles";
+import { Button, Error, Form, Header, Input, Label, LinkContainer, Success } from "./styles";
 import useInput from "@hooks/useInput";
+
 import axios from "axios";
+import {Link} from 'react-router-dom';
 
 
 const SignUp = () => {
@@ -10,6 +12,9 @@ const SignUp = () => {
   const [password, , setPassword] = useInput("");
   const [passwordCheck, , setPasswordCheck] = useInput("");
   const [mismatchError, setMismatchError] = useState(false);
+
+  const [signUpSuccess, setSignUpSuccess] = useState(false);
+  const [signUpError, setSignUpError] = useState('');
 
   const handleChangePassword = useCallback((e) => {
     setPassword(e.target.value);
@@ -26,16 +31,20 @@ const SignUp = () => {
     console.log(email, nickname, password, passwordCheck);
     if (!mismatchError && nickname) {
       console.log("서버로 회원가입하기");
+      setSignUpError(''); // 요청 보내기 전 미리 초기화
+      setSignUpSuccess(false);
 
       // 비동기 api 요청
-      axios.post("http://loalhost:3095/api/users", {
+      axios.post("/api/users", {
         email, nickname, password
       })
         .then((response) => {
           console.log(response);
+          setSignUpSuccess(true);
         })
         .catch((error) => {
           console.log(error.response);
+          setSignUpError(error.response.data);
         })
         .finally(() => {
         });
@@ -85,14 +94,14 @@ const SignUp = () => {
           </div>
           {mismatchError && <Error>비밀번호가 일치하지 않습니다.</Error>}
           {!nickname && <Error>닉네임을 입력해주세요.</Error>}
-          {/*{signUpError && <Error>{signUpError}</Error>}*/}
-          {/*{signUpSuccess && <Success>회원가입되었습니다! 로그인해주세요.</Success>}*/}
+          {signUpSuccess && <Success>회원가입되었습니다! 로그인해주세요.</Success>}
+          {signUpError !== '' && <Error>{signUpError}</Error>}
         </Label>
         <Button type="submit">회원가입</Button>
       </Form>
       <LinkContainer>
         이미 회원이신가요?&nbsp;
-        {/*<Link to="/login">로그인 하러가기</Link>*/}
+        <Link to="/login">로그인 하러가기</Link>
       </LinkContainer>
     </div>
   );
