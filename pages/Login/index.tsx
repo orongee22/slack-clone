@@ -2,13 +2,15 @@ import React, { useCallback, useState } from "react";
 import useInput from "@hooks/useInput";
 
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, Redirect } from "react-router-dom";
 import { Button, Error, Form, Header, Input, Label, LinkContainer } from "@pages/Login/style";
+import useSWR from "swr/esm";
+import fetcher from "@utils/fetcher";
 
 
 const Login = () => {
-  const [email, handleChangeEmail, setEmail] = useInput("");
-  const [nickname, handleChangeNickname, setNickname] = useInput("");
+  const {data, error, revalidate} = useSWR('http://localhost:3095/api/users', fetcher);
+  const [email, ,setEmail ] = useInput("");
   const [password, , setPassword] = useInput("");
 
   const [loginError, setLoginError] = useState("");
@@ -17,27 +19,44 @@ const Login = () => {
     setPassword(e.target.value);
   }, []);
 
+  const handleChangeEmail = useCallback((e)=>{
+    setEmail(e.target.value);
+  },[]);
+
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
-    console.log(email, password);
-    console.log("서버로 로그인하기");
+
     setLoginError(""); // 요청 보내기 전 미리 초기화
+    console.log(email);
+    console.log(password);
 
     // 비동기 api 요청
-    axios.post("/api/users/login", {
+    axios.post("http://localhost:3095/api/users/login", {
       email, password
     })
       .then((response) => {
-        console.log(response);
+        console.log(response.data);
+        revalidate();
+
       })
       .catch((error) => {
         console.log(error.response);
-        setLoginError(error.response.data);
+        setLoginError(error.response?.data?.statusCode === 401);
       })
       .finally(() => {
+        console.log(data);
       });
-  }, [email, nickname, password]);
+  }, [email, password]);
+
+  if(data === undefined){
+    return <div>...로딩 중</div>;
+  }
+
+  // 로그인 성공 후 data 받아왔다면 channel 로 이동
+  if(data){
+    return <Redirect to={"/workspace/channel"} />
+  }
 
   return (
     <div id="container">
@@ -62,7 +81,7 @@ const Login = () => {
             onChange={handleChangePassword} />
           {loginError && <Error>이메일과 비밀번호 조합이 일치하지 않습니다.</Error>}
         </Label>
-        <Button type="submit">로그인</Button>
+        <Button onClick={handleSubmit}>로그인</Button>
       </Form>
       <LinkContainer>
         <Link to="/signup">회원가입 하러가기</Link>
